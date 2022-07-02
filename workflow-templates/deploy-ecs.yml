@@ -1,0 +1,52 @@
+name: Deploy to ECS
+on:
+  push:
+    branches:
+      - master
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout master
+        uses: actions/checkout@v2
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/${{ secrets.AWS_ROLE }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Download .env from S3
+        run: |
+          aws s3 cp s3://${{ secrets.S3_ENV_FILE_PATH }} ./.env
+
+      - name: Build docker image locally
+        run: |
+          source .env;
+          docker build \
+          --build-arg AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
+          --build-arg AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
+          --build-arg AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION \
+          --build-arg AWS_ACCOUNT_ID=$AWS_ACCOUNT_ID \
+          --build-arg AWS_CODE_ARTIFACT_DOMAIN_OWNER=$AWS_CODE_ARTIFACT_DOMAIN_OWNER \
+          --build-arg AWS_CODE_ARTIFACT_DOMAIN=$AWS_CODE_ARTIFACT_DOMAIN \
+          --build-arg AWS_CODE_ARTIFACT_REPOSITORY=$AWS_CODE_ARTIFACT_REPOSITORY \
+          -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/${{ secrets.AWS_ECR_TAG }}:latest .;
+
+      - name: Login to ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Push docker image to ECR
+        run: |
+          source .env;
+          docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/${{ secrets.AWS_ECR_TAG }}:latest;
+
+      - name: Update ECS service
+        run: |
+          aws ecs update-service \
+          --cluster ${{ secrets.ECS_CLUSTER }} \
+          --service ${{ secrets.ECS_SERVICE }} \
+          --force-new-deployment

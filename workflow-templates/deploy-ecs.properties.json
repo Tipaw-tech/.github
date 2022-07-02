@@ -1,0 +1,4 @@
+{
+  "name": "Tipaw Deploy ECS Workflow",
+  "description": "Standart ECR, Docker, ECS, .env deployment for the tipaw team"
+}
