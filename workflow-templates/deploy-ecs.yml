@@ -33,7 +33,7 @@ jobs:
           --build-arg AWS_CODE_ARTIFACT_DOMAIN_OWNER=$AWS_CODE_ARTIFACT_DOMAIN_OWNER \
           --build-arg AWS_CODE_ARTIFACT_DOMAIN=$AWS_CODE_ARTIFACT_DOMAIN \
           --build-arg AWS_CODE_ARTIFACT_REPOSITORY=$AWS_CODE_ARTIFACT_REPOSITORY \
-          -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/${{ secrets.AWS_ECR_TAG }}:latest .;
+          -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/${{ secrets.ECR_TAG }}:latest .;
 
       - name: Login to ECR
         id: login-ecr
@@ -42,7 +42,7 @@ jobs:
       - name: Push docker image to ECR
         run: |
           source .env;
-          docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/${{ secrets.AWS_ECR_TAG }}:latest;
+          docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/${{ secrets.ECR_TAG }}:latest;
 
       - name: Update ECS service
         run: |
